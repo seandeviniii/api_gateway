@@ -2,16 +2,39 @@ from django.contrib import admin
 from django.utils.html import format_html
 from django.urls import reverse
 from django.utils.safestring import mark_safe
+from django import forms
 from .models import APIKey, RequestLog, ServiceConfig
+from .utils import generate_api_key
+
+
+class APIKeyAdminForm(forms.ModelForm):
+    """Custom form for APIKey admin with helpful help text."""
+    
+    class Meta:
+        model = APIKey
+        fields = '__all__'
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if not self.instance.pk:  # Only for new instances
+            self.fields['key'].help_text = "API key will be auto-generated. You can modify it if needed."
 
 
 @admin.register(APIKey)
 class APIKeyAdmin(admin.ModelAdmin):
+    form = APIKeyAdminForm
     list_display = ['name', 'key_display', 'is_active', 'requests_per_minute', 'requests_per_hour', 'last_used', 'created_at']
     list_filter = ['is_active', 'created_at', 'last_used']
     search_fields = ['name', 'key']
     readonly_fields = ['id', 'created_at', 'updated_at', 'last_used']
     ordering = ['-created_at']
+    
+    def get_changeform_initial_data(self, request):
+        """Auto-generate API key when adding a new API key."""
+        initial = super().get_changeform_initial_data(request)
+        if not initial.get('key'):
+            initial['key'] = generate_api_key()
+        return initial
     
     def key_display(self, obj):
         """Display only first 8 characters of the API key for security."""
