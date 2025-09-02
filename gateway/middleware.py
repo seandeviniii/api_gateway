@@ -16,7 +16,16 @@ class APIAuthenticationMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         # Skip authentication for admin and health check endpoints
-        if request.path.startswith('/admin/') or request.path.startswith('/health/'):
+        # Also check for admin URLs that might have different paths
+        admin_paths = ['/admin/', '/admin', '/django-admin/', '/django-admin']
+        health_paths = ['/health/', '/health']
+        
+        # Debug: Print the request path to help troubleshoot
+        print(f"DEBUG: Processing request path: {request.path}")
+        
+        # Check if the request path starts with any admin or health paths
+        if any(request.path.startswith(path) for path in admin_paths + health_paths):
+            print(f"DEBUG: Skipping authentication for path: {request.path}")
             return None
         
         # Get API key from headers
@@ -53,7 +62,12 @@ class RateLimitMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         # Skip rate limiting for admin and health check endpoints
-        if request.path.startswith('/admin/') or request.path.startswith('/health/'):
+        # Also check for admin URLs that might have different paths
+        admin_paths = ['/admin/', '/admin', '/django-admin/', '/django-admin']
+        health_paths = ['/health/', '/health']
+        
+        # Check if the request path starts with any admin or health paths
+        if any(request.path.startswith(path) for path in admin_paths + health_paths):
             return None
         
         if not hasattr(request, 'api_key'):
@@ -96,7 +110,12 @@ class RequestLoggingMiddleware(MiddlewareMixin):
     
     def process_request(self, request):
         # Skip logging for admin and health check endpoints
-        if request.path.startswith('/admin/') or request.path.startswith('/health/'):
+        # Also check for admin URLs that might have different paths
+        admin_paths = ['/admin/', '/admin', '/django-admin/', '/django-admin']
+        health_paths = ['/health/', '/health']
+        
+        # Check if the request path starts with any admin or health paths
+        if any(request.path.startswith(path) for path in admin_paths + health_paths):
             return None
         
         # Store request start time
