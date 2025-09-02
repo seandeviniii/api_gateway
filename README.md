@@ -156,10 +156,8 @@ GET /api/stats/
 GET /api/logs/
 GET /api/logs/?service=user-service&limit=10
 
-# Manage API keys
-GET /api/keys/
-POST /api/keys/
-DELETE /api/keys/{key-id}/
+# Note: API keys are managed via Django admin panel only
+# Admin URL: http://localhost:8000/admin/
 ```
 
 ## API Endpoints
@@ -175,9 +173,8 @@ DELETE /api/keys/{key-id}/
 ### Management Endpoints
 - `GET /api/stats/` - API usage statistics
 - `GET /api/logs/` - Request logs
-- `GET /api/keys/` - List API keys
-- `POST /api/keys/` - Create API key
-- `DELETE /api/keys/{key-id}/` - Delete API key
+
+**Note:** API keys are managed exclusively through the Django admin panel at `/admin/`
 
 ## Rate Limiting
 
@@ -210,10 +207,26 @@ Logs are stored in the database and can be viewed in the Django admin interface.
 ## Admin Interface
 
 Access the Django admin at `/admin/` to:
-- Manage API keys
-- View request logs
-- Configure service settings
-- Monitor system health
+- **Manage API Keys**: Create, edit, and delete API keys
+- **View Request Logs**: Monitor all API requests and responses
+- **Configure Services**: Set up downstream service configurations
+- **Monitor System Health**: Check service status and performance
+
+### API Key Management
+
+API keys can only be created and managed through the Django admin panel:
+
+1. **Access Admin**: Go to `http://localhost:8000/admin/`
+2. **Login**: Use your superuser credentials
+3. **API Keys Section**: Navigate to "API Keys" under the Gateway app
+4. **Create Key**: Click "Add API Key" and fill in:
+   - **Name**: Descriptive name for the key
+   - **Requests per minute**: Rate limit for this key (default: 60)
+   - **Requests per hour**: Hourly rate limit (default: 1000)
+5. **Save**: The system will generate a unique API key automatically
+6. **Copy Key**: Copy the generated key for use in your applications
+
+**Security Note**: API keys are only shown once upon creation. Store them securely!
 
 ## Development
 
@@ -223,14 +236,15 @@ python manage.py test
 ```
 
 ### Creating API Keys
-```bash
-# Using management command
-python manage.py setup_gateway --create-sample-keys
 
-# Using API
-curl -X POST http://localhost:8000/api/keys/ \
-  -H "Content-Type: application/json" \
-  -d '{"name": "My API Key", "requests_per_minute": 100}'
+API keys can only be created through the Django admin panel:
+
+```bash
+# Access admin panel
+http://localhost:8000/admin/
+
+# Or use management command for sample keys
+python manage.py setup_gateway --create-sample-keys
 ```
 
 ### Adding New Services

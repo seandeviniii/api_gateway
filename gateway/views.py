@@ -9,7 +9,6 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from .proxy import proxy_service
 from .models import APIKey, RequestLog, ServiceConfig
-from .utils import generate_api_key
 
 logger = logging.getLogger('gateway')
 
@@ -165,97 +164,4 @@ class RequestLogsView(APIView):
             logger.error(f"Error getting request logs: {e}")
             return Response({
                 'error': 'Failed to get request logs'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-
-
-class APIKeyManagementView(APIView):
-    """View for managing API keys."""
-    permission_classes = [AllowAny]
-    
-    def get(self, request):
-        """List all API keys."""
-        try:
-            api_keys = APIKey.objects.all()
-            keys_data = []
-            
-            for key in api_keys:
-                keys_data.append({
-                    'id': str(key.id),
-                    'name': key.name,
-                    'key_preview': f"{key.key[:8]}...",
-                    'is_active': key.is_active,
-                    'requests_per_minute': key.requests_per_minute,
-                    'requests_per_hour': key.requests_per_hour,
-                    'created_at': key.created_at.isoformat(),
-                    'last_used': key.last_used.isoformat() if key.last_used else None
-                })
-            
-            return Response({
-                'api_keys': keys_data,
-                'total': len(keys_data)
-            })
-            
-        except Exception as e:
-            logger.error(f"Error listing API keys: {e}")
-            return Response({
-                'error': 'Failed to list API keys'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    def post(self, request):
-        """Create a new API key."""
-        try:
-            name = request.data.get('name')
-            
-            if not name:
-                return Response({
-                    'error': 'Name is required'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            # Generate API key
-            api_key_value = generate_api_key()
-            
-            # Create API key object
-            api_key = APIKey.objects.create(
-                name=name,
-                key=api_key_value,
-                requests_per_minute=request.data.get('requests_per_minute', 60),
-                requests_per_hour=request.data.get('requests_per_hour', 1000)
-            )
-            
-            return Response({
-                'message': 'API key created successfully',
-                'api_key': {
-                    'id': str(api_key.id),
-                    'name': api_key.name,
-                    'key': api_key.key,  # Only show full key on creation
-                    'requests_per_minute': api_key.requests_per_minute,
-                    'requests_per_hour': api_key.requests_per_hour,
-                    'created_at': api_key.created_at.isoformat()
-                }
-            }, status=status.HTTP_201_CREATED)
-            
-        except Exception as e:
-            logger.error(f"Error creating API key: {e}")
-            return Response({
-                'error': 'Failed to create API key'
-            }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
-    
-    def delete(self, request, key_id):
-        """Delete an API key."""
-        try:
-            api_key = APIKey.objects.get(id=key_id)
-            api_key.delete()
-            
-            return Response({
-                'message': 'API key deleted successfully'
-            })
-            
-        except APIKey.DoesNotExist:
-            return Response({
-                'error': 'API key not found'
-            }, status=status.HTTP_404_NOT_FOUND)
-        except Exception as e:
-            logger.error(f"Error deleting API key: {e}")
-            return Response({
-                'error': 'Failed to delete API key'
             }, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

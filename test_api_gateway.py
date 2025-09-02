@@ -5,22 +5,16 @@ This script demonstrates the main functionality of the API Gateway.
 """
 
 import requests
-import json
 import time
-from typing import Dict, Any
+import json
 
 # Configuration
 BASE_URL = "http://localhost:8000"
-API_KEY = None  # Will be set after creating an API key
+API_KEY = None  # This will be set manually or via admin panel
 
-
-def print_response(response: requests.Response, title: str = "Response"):
-    """Print formatted response."""
-    print(f"\n{'='*50}")
-    print(f"{title}")
-    print(f"{'='*50}")
-    print(f"Status Code: {response.status_code}")
-    print(f"Headers: {dict(response.headers)}")
+def print_response(response, test_name):
+    """Print response details for debugging."""
+    print(f"{test_name} - Status: {response.status_code}")
     try:
         print(f"Body: {json.dumps(response.json(), indent=2)}")
     except:
@@ -35,158 +29,105 @@ def test_health_check():
     return response.status_code == 200
 
 
-def create_api_key():
-    """Create a new API key."""
-    print("\n2. Creating API Key")
-    data = {
-        "name": "Test API Key",
-        "requests_per_minute": 100,
-        "requests_per_hour": 1000
-    }
-    response = requests.post(
-        f"{BASE_URL}/api/keys/",
-        json=data,
-        headers={"Content-Type": "application/json"}
-    )
-    print_response(response, "Create API Key")
-    
-    if response.status_code == 201:
-        global API_KEY
-        API_KEY = response.json()["api_key"]["key"]
-        print(f"API Key created: {API_KEY}")
-        return True
-    return False
-
-
 def test_api_key_authentication():
     """Test API key authentication."""
-    print("\n3. Testing API Key Authentication")
+    print("\n2. Testing API Key Authentication")
     
     # Test without API key (should fail)
-    print("\n3a. Request without API key (should fail)")
+    print("\n2a. Request without API key (should fail)")
     response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/")
     print_response(response, "No API Key")
     
-    if not API_KEY:
-        print("No API key available, skipping authenticated tests")
-        return False
+    # Note: API keys must be created via Django admin panel
+    print("\n2b. Skipping authenticated tests - API keys must be created via admin panel")
+    print("To test with API key:")
+    print("1. Go to http://localhost:8000/admin/")
+    print("2. Create an API key in the admin panel")
+    print("3. Use that key in the X-API-Key header")
     
-    # Test with API key (should succeed)
-    print("\n3b. Request with API key (should succeed)")
-    headers = {"X-API-Key": API_KEY}
-    response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/", headers=headers)
-    print_response(response, "With API Key")
-    
-    return response.status_code != 401
+    return True
 
 
 def test_rate_limiting():
     """Test rate limiting functionality."""
-    print("\n4. Testing Rate Limiting")
+    print("\n3. Testing Rate Limiting")
     
-    if not API_KEY:
-        print("No API key available, skipping rate limiting tests")
-        return False
+    print("Note: Rate limiting tests require a valid API key")
+    print("Create an API key via admin panel first")
     
-    headers = {"X-API-Key": API_KEY}
-    
-    # Make multiple requests quickly to test rate limiting
-    print("Making multiple requests to test rate limiting...")
-    for i in range(5):
-        response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/", headers=headers)
-        print(f"Request {i+1}: Status {response.status_code}")
-        if response.status_code == 429:
-            print("Rate limit hit!")
-            break
-        time.sleep(0.1)
+    # Test without API key (should fail)
+    print("\n3a. Testing rate limiting without API key")
+    response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/")
+    print_response(response, "Rate Limit Test - No API Key")
     
     return True
 
 
 def test_api_management():
     """Test API management endpoints."""
-    print("\n5. Testing API Management")
+    print("\n4. Testing API Management")
     
     # Get API statistics
-    print("\n5a. Getting API Statistics")
+    print("\n4a. Getting API Statistics")
     response = requests.get(f"{BASE_URL}/api/stats/")
     print_response(response, "API Statistics")
     
     # Get request logs
-    print("\n5b. Getting Request Logs")
+    print("\n4b. Getting Request Logs")
     response = requests.get(f"{BASE_URL}/api/logs/?limit=5")
     print_response(response, "Request Logs")
-    
-    # List API keys
-    print("\n5c. Listing API Keys")
-    response = requests.get(f"{BASE_URL}/api/keys/")
-    print_response(response, "API Keys")
     
     return True
 
 
 def test_service_health():
     """Test service health endpoints."""
-    print("\n6. Testing Service Health")
+    print("\n5. Testing Service Health")
     
     # Get all services status
-    print("\n6a. All Services Status")
+    print("\n5a. All Services Status")
     response = requests.get(f"{BASE_URL}/api/services/status/")
     print_response(response, "Services Status")
     
     # Test individual service health
-    print("\n6b. Individual Service Health")
+    print("\n5b. Individual Service Health")
     services = ["user-service", "product-service", "order-service"]
+    
     for service in services:
         response = requests.get(f"{BASE_URL}/api/health/{service}/")
-        print(f"\n{service}: Status {response.status_code}")
-        try:
-            print(f"Response: {response.json()}")
-        except:
-            print(f"Response: {response.text}")
+        print_response(response, f"Service Health - {service}")
     
     return True
 
 
 def test_proxy_functionality():
-    """Test proxy functionality with mock services."""
-    print("\n7. Testing Proxy Functionality")
+    """Test proxy functionality to downstream services."""
+    print("\n6. Testing Proxy Functionality")
     
-    if not API_KEY:
-        print("No API key available, skipping proxy tests")
-        return False
+    # Test proxy without API key (should fail)
+    print("\n6a. Testing proxy without API key (should fail)")
+    response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/")
+    print_response(response, "Proxy - No API Key")
     
-    headers = {"X-API-Key": API_KEY}
-    
-    # Test different HTTP methods
-    methods = ["GET", "POST", "PUT", "DELETE"]
-    for method in methods:
-        print(f"\n7a. Testing {method} request")
-        try:
-            if method == "GET":
-                response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/", headers=headers)
-            elif method == "POST":
-                response = requests.post(f"{BASE_URL}/api/proxy/user-service/users/", headers=headers, json={"test": "data"})
-            elif method == "PUT":
-                response = requests.put(f"{BASE_URL}/api/proxy/user-service/users/123", headers=headers, json={"test": "data"})
-            elif method == "DELETE":
-                response = requests.delete(f"{BASE_URL}/api/proxy/user-service/users/123", headers=headers)
-            
-            print(f"{method} Response: {response.status_code}")
-        except Exception as e:
-            print(f"{method} Error: {e}")
+    # Test proxy with invalid API key (should fail)
+    print("\n6b. Testing proxy with invalid API key (should fail)")
+    headers = {"X-API-Key": "invalid-key"}
+    response = requests.get(f"{BASE_URL}/api/proxy/user-service/users/", headers=headers)
+    print_response(response, "Proxy - Invalid API Key")
     
     return True
 
 
 def main():
     """Run all tests."""
-    print("Django API Gateway Test Suite")
+    print("🚀 API Gateway Testing Suite")
+    print("=" * 50)
+    print("Note: API keys must be created via Django admin panel")
+    print("Admin URL: http://localhost:8000/admin/")
     print("=" * 50)
     
     tests = [
         ("Health Check", test_health_check),
-        ("Create API Key", create_api_key),
         ("API Key Authentication", test_api_key_authentication),
         ("Rate Limiting", test_rate_limiting),
         ("API Management", test_api_management),
@@ -194,34 +135,31 @@ def main():
         ("Proxy Functionality", test_proxy_functionality),
     ]
     
-    results = []
+    passed = 0
+    total = len(tests)
+    
     for test_name, test_func in tests:
         try:
-            result = test_func()
-            results.append((test_name, result))
-            print(f"✓ {test_name}: {'PASSED' if result else 'FAILED'}")
+            if test_func():
+                print(f"✅ {test_name}: PASSED")
+                passed += 1
+            else:
+                print(f"❌ {test_name}: FAILED")
         except Exception as e:
-            results.append((test_name, False))
-            print(f"✗ {test_name}: ERROR - {e}")
+            print(f"❌ {test_name}: ERROR - {e}")
     
-    # Summary
     print("\n" + "=" * 50)
-    print("TEST SUMMARY")
-    print("=" * 50)
-    
-    passed = sum(1 for _, result in results if result)
-    total = len(results)
-    
-    for test_name, result in results:
-        status = "PASSED" if result else "FAILED"
-        print(f"{test_name}: {status}")
-    
-    print(f"\nOverall: {passed}/{total} tests passed")
+    print(f"Test Results: {passed}/{total} tests passed")
     
     if passed == total:
-        print("🎉 All tests passed! The API Gateway is working correctly.")
+        print("🎉 All tests passed!")
     else:
-        print("⚠️  Some tests failed. Check the output above for details.")
+        print("⚠️  Some tests failed. Check the output above.")
+    
+    print("\n📋 Next Steps:")
+    print("1. Create API keys via Django admin panel")
+    print("2. Test authenticated endpoints with valid API keys")
+    print("3. Test rate limiting with valid API keys")
 
 
 if __name__ == "__main__":

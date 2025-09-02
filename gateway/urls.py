@@ -14,8 +14,4 @@ urlpatterns = [
     # API management endpoints
     path('stats/', views.APIStatsView.as_view(), name='api_stats'),
     path('logs/', views.RequestLogsView.as_view(), name='request_logs'),
-    
-    # API key management
-    path('keys/', views.APIKeyManagementView.as_view(), name='api_keys'),
-    path('keys/<str:key_id>/', views.APIKeyManagementView.as_view(), name='api_key_detail'),
 ]
