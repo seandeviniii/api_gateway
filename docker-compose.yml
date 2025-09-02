@@ -11,28 +11,28 @@ services:
     restart: unless-stopped
 
   # API Gateway
-  api-gateway:
-    build: .
-    ports:
-      - "8000:8000"
-    environment:
-      - DEBUG=False
-      - REDIS_URL=redis://redis:6379/0
-      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
-      - ALLOWED_HOSTS=localhost,127.0.0.1
-      - USER_SERVICE_URL=${USER_SERVICE_URL:-http://localhost:8001}
-      - PRODUCT_SERVICE_URL=${PRODUCT_SERVICE_URL:-http://localhost:8002}
-      - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://localhost:8003}
-    depends_on:
-      - redis
-    volumes:
-      - ./logs:/app/logs
-      - ./media:/app/media
-    restart: unless-stopped
-    command: >
-      sh -c "python manage.py migrate &&
-             python manage.py setup_gateway --all &&
-             gunicorn api_gateway.wsgi:application --bind 0.0.0.0:8000 --workers 4"
+  # api-gateway:
+  #   build: .
+  #   ports:
+  #     - "8000:8000"
+  #   environment:
+  #     - DEBUG=False
+  #     - REDIS_URL=redis://redis:6379/0
+  #     - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
+  #     - ALLOWED_HOSTS=localhost,127.0.0.1
+  #     - USER_SERVICE_URL=${USER_SERVICE_URL:-http://localhost:8001}
+  #     - PRODUCT_SERVICE_URL=${PRODUCT_SERVICE_URL:-http://localhost:8002}
+  #     - ORDER_SERVICE_URL=${ORDER_SERVICE_URL:-http://localhost:8003}
+  #   depends_on:
+  #     - redis
+  #   volumes:
+  #     - ./logs:/app/logs
+  #     - ./media:/app/media
+  #   restart: unless-stopped
+  #   command: >
+  #     sh -c "python manage.py migrate &&
+  #            python manage.py setup_gateway --all &&
+  #            gunicorn api_gateway.wsgi:application --bind 0.0.0.0:8000 --workers 4"
 
   # Optional: Sample user service for testing
   user-service:
